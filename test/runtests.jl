@@ -39,7 +39,29 @@ display( sum23 )
 println()
 @test size(sum23) == (2, 3)
 
+@info "get all keys"
 
+oks = file2Keys( info; lazyList = true)
+
+for x in 1:2:30
+    for y in 1:2:10
+        key = (x = x, y = y)
+        if (keyExists( key, oks))
+            println("skipping $key   \r")
+            continue
+        end
+        matrix = rand( x % 3 + 1, y % 4 + 1 )
+        avg = sqrt( 0.5 * ( x ^ 2 + y ^ 2))
+        data = Dict(:matrix => matrix, :avg => avg)
+        dict2File( key, data, info )
+        println("Key $key in storage      \r")
+    end
+end
+
+rows2 = file2Rows(info)
+sampleRow =   findRows( sample, rows2 )  
+
+@test length(sampleRow) == 1
 
 rm( "xy.csv" )
 

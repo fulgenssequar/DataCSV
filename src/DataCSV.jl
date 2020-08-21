@@ -51,12 +51,14 @@ function file2Rows(info::CSVInfo)
     rawTable
 end
 
-function file2Keys(info)
+function file2Keys(info::CSVInfo; lazyList = false)
     if (! isfile(info.fileName))
         return [ ]
     end
-    keyColumns = CSV.Rows(info.fileName; select=info.keys, types = info.keytypes) 
-    [ Dict([ k => r[k] for k in keys(r)]) for r in keyColumns]
+    keyColumns = CSV.Rows(info.fileName; select=collect( info.keys), types = info.keytypes) 
+    if (lazyList) keyColumns else
+        [ Dict([ k => r[k] for k in keys(r)]) for r in keyColumns]
+    end
 end
 
 
@@ -84,7 +86,7 @@ function useRow(r; nokeys = false, dmapper= identity)
     end
 end
 
-function findRows( key::Dict, rows; iter = false, nokeys = true, dmapper = identity )
+function findRows( key::Union{Dict, NamedTuple}, rows; iter = false, nokeys = true, dmapper = identity )
     f( r ) = goodRow( key, r )
     findRows( f, rows; iter = iter, nokeys = nokeys, dmapper = dmapper )
 end
