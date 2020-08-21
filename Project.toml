@@ -1,0 +1,8 @@
+name = "DataCSV"
+uuid = "9a53928a-e384-11ea-1410-3f3a286843c6"
+authors = ["guolh"]
+version = "0.1.0"
+
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
