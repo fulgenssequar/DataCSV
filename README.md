@@ -1,20 +1,19 @@
-# DataCSV: store and query data using CSV.jl
+# DataCSV: Store and Restore Data Using CSV.jl
 
-## introduction
-
+## Introduction
 
 ### What for:
-Gigantic amount of data items can be restored and extracted using Dictionary-like CSV files without exerting the memory.
+Gigantic amount of data items can be stored and extracted using Dictionary-like CSV files without exerting the memory.
 
 ### Features:
 - New data is appended to the csv file in disk without risk of lost in case of shutdown.
 - A column named "Data" is preserved to restore the data which is converted into String.
-- All other columns are keys for query the data.
+- All other columns are keys for query.
 - A Dict data can be directly converted into a csv item.
 
 ##  Usage
 
-Functions:
+Exported Functions:
 
 - CSVInfo(::Dict, String)::CSVInfo  Returns the object containing the information of the current csv file. 
 
@@ -47,11 +46,12 @@ Get the row iterator from rows where filter returns true:
 
 # Get all matrices of size 2 x 3
 
-# Return a iterator, not a Array
-# Discard all key columns other than the :Data column
-# Only return the [:matrix] from the Dict.
+# Return a iterator, not a Array -> iter
+# Discard all key columns other than the :Data column -> nokeys
+# Only return the [:matrix] from the Dict. -> dmapper
 
 mx23 = findRows( r -> r.x % 3 == 1 && r.y % 4 == 2, rows; iter = true, nokeys = true, dmapper = d -> d[:matrix] )
+# mx23 can be folded, reduced, aggregated, accumulated, etc.
 
 ```
 

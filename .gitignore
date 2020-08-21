@@ -1,0 +1,27 @@
+## Emacs:
+
+# -*- mode: gitignore; -*-
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+
+
+## julia ignore:
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+deps/deps.jl
+
+## end julia ignore
+
+
+
+
+output
+rsyncWhat.sh
