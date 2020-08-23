@@ -54,7 +54,50 @@ mx23 = findRows( r -> r.x % 3 == 1 && r.y % 4 == 2, rows; iter = true, nokeys = 
 # mx23 can be folded, reduced, aggregated, accumulated, etc.
 
 ```
+## Intelligent iteration using exported function: iterForward
 
+In case of computer shutdown, the csv file contains only partial lines of the whole desired data.
+If the iterative computation restores from beginning ,the csv file **is appended** with new data and consequently contains **reduplicated** data.
+However, checking if a certain key is contained by the old file before computatoin would be time consuming, and totally discarding old data would be uneconomical.
+So you would want to use the function:
+``` julia
+function iterForward(f::Function, iterKeys::AbstractArray, iterRanges::Dict, info::CSVInfo; keyForData = (p, d) -> p)::Unit
+```
+which rapidly find the position where the last iteration was stoped and resume the computation, beside doing the normal iteration.
+
+- Function f takes a Dict as input and returns the result data
+- iterKeys defines the order of iteration, where the last is looped first ( same as the nested for loop )
+- * iterKeys should contain only (not necessarily all) keys indicated in the CSVInfo object. If not all, keyForData(paras, data) should be defined properly.
+- Any new data computed by f will be appended to the csv file indicated by info.
+
+```julia
+iKeys = [:x, :y]
+iRanges1 = Dict(:x => 1:10, :y => 1:10)
+iRanges2 = Dict(:x => 1:23, :y => 1:10)
+
+function getData(paras)
+    x = paras[ :x ]
+    y = paras[ :y ]
+    matrix = rand( x % 3 + 1, y % 4 + 1 )
+    avg = sqrt( 0.5 * ( x ^ 2 + y ^ 2))
+    data = Dict(:matrix => matrix, :avg => avg)
+    println("Smart Iteration at: x = $x, y = $y")
+    data
+end
+
+iterForward(getData, iKeys, iRanges1, info)
+
+# shutdown and resume 
+
+iterForward(getData, iKeys, iRanges2, info)
+
+rows = collect(file2Rows(info))
+
+if (test length(rows) == 230)
+    println("No obvious reduplication or missing detected")
+end
+
+```
 ## See Also:
 ```
 /test/runtest.jl
