@@ -187,6 +187,7 @@ function getRapidChecker(info::CSVInfo)::Function
 end
 
 function iterForward(f::Function, iterKeys::AbstractArray, iterRanges::Dict, info::CSVInfo; keyForData = (p, d) -> p)
+    # Do new iteration or resume the interrupted csv file.
     function runAndSave(paras)
         data::Dict = f( paras )
         dict2File(keyForData(paras, data), data, info)
