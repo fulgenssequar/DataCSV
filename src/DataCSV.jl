@@ -109,6 +109,25 @@ function keyExists(keys::Union{Dict, NamedTuple}, rows)
     return false
 end
 
+trueRange(rg::AbstractArray, keyMap::Dict) = rg
+trueRange(rg::Function, keyMap::Dict) = begin
+    rg(keyMap)
+end
+
+function rangesFirst(keys::AbstractArray, ranges::Dict; n::Int = 1, keyMap = Dict())
+    if (n > length(keys))
+        return ranges
+    end
+    k = keys[n]
+    rg  = trueRange(ranges[k], keyMap)
+    if (isempty(rg))
+         Dict()
+    else
+        keyMap1 = merge(keyMap, Dict(k => rg[1]))
+        ranges1 = merge(ranges, Dict( k => rg ))
+        rangesFirst(keys, ranges1; n = n + 1, keyMap = keyMap1)
+    end
+end
 
 function headFirst(keys::Array, ranges::Dict, f::Function; n::Int = 1, pace::Int = -1)::Dict
     # Find the unique point (p) in a sequence where f (p)  turns from true to false,
@@ -118,28 +137,34 @@ function headFirst(keys::Array, ranges::Dict, f::Function; n::Int = 1, pace::Int
     if (n > length(keys))
         return Dict()
     end
-    k = keys[n]
-    rg = ranges[k]
-    if (length(rg) <= 1)
-        return headFirst( keys, ranges, f; n = n + 1 )
+    ranges2 = rangesFirst(keys, ranges)
+    if (isempty(ranges2))
+        return Dict()
     end
-    paceGood = if (pace >= length(rg) || pace <= 0) div(length(rg), 2) else pace end
+    
+    k = keys[n]
+    rg = ranges2[k]
+    ranges1 = merge(ranges, Dict(k => rg))
+    if (length(rg) <= 1)
+        return headFirst( keys, ranges1, f; n = n + 1)
+    end
+    paceGood = if (pace >= length(rg) || pace <= 0) div(length(rg), 2) else pace end    
     
     r1 = rg[1]
     r2 = rg[1 + paceGood]
-    param1 = Dict([r => ranges[r][1] for r in keys])
+    param1 = Dict([r => ranges2[r][1] for r in keys])
     param2 = merge(param1, Dict(k => r2))
     if (f(param2))
-        ranges[k] = ranges[k][1 + paceGood : end]
-        return headFirst( keys, ranges, f; n = n)
+        ranges1[k] = rg[1 + paceGood : end]
+        return headFirst( keys, ranges1, f; n = n )
     elseif paceGood > 1
-        headFirst( keys, ranges, f; pace = div(paceGood, 2), n = n)
+        headFirst( keys, ranges1, f; pace = div(paceGood, 2), n = n  )
     else
         # between rg and rg.tail
-        out = headFirst( keys, copy(ranges), f; n = n + 1)
+        out = headFirst( keys, ranges1, f; n = n + 1)
         if (isempty(out))
-            ranges1 = merge(ranges, Dict(k => rg[2 : end]))
-            return ranges1
+            ranges1[k] = rg[2 : end]
+            return rangesFirst(keys, ranges1)
         else
            return out
         end
@@ -164,7 +189,7 @@ function iterFromInit(f::Function, keys::AbstractArray, ranges::Dict; init = ran
                 worker(ks[2 : end], paras1; useInit = false)
             end
         else
-            rg = ranges[k]
+            rg = trueRange(ranges[k], paras)
             for r in rg
                 paras1 = merge(paras, Dict(k => r))
                 worker(ks[2 : end], paras1; useInit = false)
@@ -179,7 +204,7 @@ function getRapidChecker(info::CSVInfo)::Function
     if (! isfile(info.fileName))
         return (d) -> false
     end
-   oks = file2Keys(info; lazyList = true) 
+    oks = file2Keys(info; lazyList = true) 
     function f(k)
         keyExists(k, oks)
     end
@@ -189,14 +214,13 @@ end
 function iterForward(f::Function, iterKeys::AbstractArray, iterRanges::Dict, info::CSVInfo; keyForData = (p, d) -> p)
     # Do new iteration or resume the interrupted csv file.
     function runAndSave(paras)
-        data::Dict = f( paras )
+        data = f( paras )
         dict2File(keyForData(paras, data), data, info)
     end
     checker = getRapidChecker(info)
     init = headFirst(iterKeys, iterRanges, checker)
     iterFromInit(runAndSave, iterKeys, iterRanges; init = init) 
 end
-
 
 function getKeyChecker(info)
     keysInFile = [] 

@@ -100,7 +100,10 @@ println(out)
 @info "Check Advanced Iteration Method:"
 
 iKeys = [:x, :y]
-iRanges = Dict(:x => 1:23, :y => 1:10)
+iRanges = Dict(
+    :x => 1:23,
+    :y => (d) -> (d[:x] < 21) ? (1 : 10) : (1 : d[:x] - 20)
+)
 
 function getData(paras)
     x = paras[ :x ]
@@ -116,7 +119,7 @@ iterForward(getData, iKeys, iRanges, info)
 
 rows = collect(file2Rows(info))
 
-@test length(rows) == 230
+@test length(rows) == 206
 
 rm( "xy.csv" )
 
