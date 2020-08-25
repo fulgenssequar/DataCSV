@@ -24,4 +24,4 @@ deps/deps.jl
 
 
 output
-rsyncWhat.sh
+.rsyncRemote
