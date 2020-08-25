@@ -126,18 +126,23 @@ trueRange(rg::Function, keyMap::Dict) = begin
     rg(keyMap)
 end
 
-function rangesFirst(keys::AbstractArray{Symbol}, ranges::SymbolRange; n::Int = 1, keyMap = Dict())
-    if (n > length(keys))
+function rangesFirst(iKeys::AbstractArray{Symbol}, ranges::SymbolRange; n::Int = 1, keyMap = Dict())
+    if (n > length(iKeys))
         return ranges
     end
-    k = keys[n]
+    
+    k = iKeys[n]
+    if !(k in keys(ranges))
+        return rangesFirst(iKeys, ranges; n = n + 1, keyMap = keyMap)
+    end
+         
     rg  = trueRange(ranges[k], keyMap)
     if (isempty(rg))
          Dict( )
     else
         keyMap1 = merge(keyMap, Dict(k => rg[1]))
         ranges1::Dict = merge(ranges, SymbolRange( k => rg ))
-        rangesFirst(keys, ranges1; n = n + 1, keyMap = keyMap1)
+        rangesFirst(iKeys, ranges1; n = n + 1, keyMap = keyMap1)
     end
 end
 
@@ -189,14 +194,16 @@ function headFirst(keys::AbstractArray, ranges::SymbolRange, f::Function; n::Int
     end
 end
 
-function iterFromInit(f::Function, keys::AbstractArray, ranges::SymbolRange; init = ranges) 
+function iterFromInit(f::Function, iKeys::AbstractArray, ranges::SymbolRange; init = ranges) 
     function worker(ks::AbstractArray, paras::Dict  = Dict(); useInit::Bool = true)
         if (isempty(ks))
             f(paras)
             return
         end
         k = ks[1]
-        if useInit
+        if !( k in keys(ranges))
+            return worker(ks[2 : end], paras; useInit = true)
+        elseif useInit
             rg = trueRange(init[k], paras)
             for r in rg[1 : 1]
                 paras1 = merge(paras, Dict(k => r))
@@ -214,7 +221,7 @@ function iterFromInit(f::Function, keys::AbstractArray, ranges::SymbolRange; ini
             end
         end
     end
-    worker(keys, Dict(); useInit = true)
+    worker(iKeys, Dict(); useInit = true)
 end
 
 
@@ -263,6 +270,11 @@ end
 
 function getLastKey(iKeys, iRanges, oldOut; n = 1, init = Dict())::SymbolRange
     # Get the final iteration list where the last csv file dies out
+    if (n > length(iKeys))
+        return init
+    elseif !( iKeys[n] in keys(iRanges))
+        return getLastKey(iKeys, iRanges, oldOut; n = n + 1, init = init)
+    end
     k = iKeys[n]
     target = oldOut[k]
     rg = trueRange( iRanges[k], oldOut )
@@ -278,11 +290,7 @@ function getLastKey(iKeys, iRanges, oldOut; n = 1, init = Dict())::SymbolRange
     
     rg1 = dealTarget(rg, target)
     init[k] = rg1
-    if n < length(iKeys)
-        getLastKey(iKeys, iRanges, oldOut; n = n + 1, init = init)
-    else
-        init
-    end
+    getLastKey(iKeys, iRanges, oldOut; n = n + 1, init = init)
 end
 
 function getNextKey(iKeys::AbstractArray, iRanges::SymbolRange, tRanges::SymbolRange; n = 1)::Tuple{SymbolRange, Bool} 
@@ -291,6 +299,9 @@ function getNextKey(iKeys::AbstractArray, iRanges::SymbolRange, tRanges::SymbolR
     #elseif n > length( iKeys )
     if n > length( iKeys )
         return (iRanges, false)
+
+    elseif !(iKeys[n] in keys(iRanges))
+        return getNextKey( iKeys, iRanges, tRanges; n = n + 1 )
     else
         k = iKeys[ n ] 
         rg = tRanges[ k ]
@@ -309,14 +320,14 @@ function getNextKey(iKeys::AbstractArray, iRanges::SymbolRange, tRanges::SymbolR
     end
 end
 
-function iterFromLast(f::Function,  iRanges::SymbolRange, info::CSVInfo; init = iRanges, keyForData = (p, d) -> p, iKeys::AbstractArray = info.keys,)
+function iterFromLast(f::Function,  iRanges::SymbolRange, info::CSVInfo; init = iRanges, keyForData = (p, d) -> p, iterKeys::AbstractArray = info.keys)
     # If iteration has history, resume from the csv file in storage; otherwise do normal iteration.
     init =
         if (isfile( info.fileName ))
             rLast = readLastLine( info )
-            println( "Found ancient iteration: $rLast" )
-            kLast = getLastKey( iKeys, iRanges, rLast )
-            nextIter, st = getNextKey( iKeys, iRanges, kLast )
+            println( "\nFound Previous Storage: $rLast" )
+            kLast = getLastKey( iterKeys, iRanges, rLast )
+            nextIter, st = getNextKey( iterKeys, iRanges, kLast )
             nextIter
         else
             init
@@ -325,7 +336,7 @@ function iterFromLast(f::Function,  iRanges::SymbolRange, info::CSVInfo; init = 
         data = f( paras )
         dict2File(keyForData(paras, data), data, info)
     end
-    iterFromInit(runAndSave, iKeys, iRanges)
+    iterFromInit(runAndSave, iterKeys, iRanges; init = init)
 end
 
 

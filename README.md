@@ -54,7 +54,7 @@ mx23 = findRows( r -> r.x % 3 == 1 && r.y % 4 == 2, rows; iter = true, nokeys = 
 # mx23 can be folded, reduced, aggregated, accumulated, etc.
 
 ```
-## Intelligent iteration using exported function: iterForward & iterFromLast
+## Intelligent Iteration Using Exported Functions: iterFromLast
 
 In case of computer shutdown, it is possible that the csv file contains only partial lines of the whole desired data.
 
@@ -97,12 +97,12 @@ end
 # First iteration:
 
 iRanges1 = SymbolRange(:x => 1:10, :y => 1:10)
-iterForward(getData, iRanges1, info)
+iterFromLast(getData, iRanges1, info)
 
 # shutdown and resume 
 
 iRanges2 = SymbolRange(:x => 1:23, :y => 1:10)
-iterForward(getData, iRanges2, info)
+iterFromLast(getData, iRanges2, info)
 
 rows = collect(file2Rows(info))
 
@@ -127,7 +127,10 @@ dynamicParameterRanges = SymbolRange(
     :z => d -> d[ :y ] : d[ :y ] + 2 # The range of z depends on y
 )
 sample = (w = 1, x = 1, y = 1, z = 1)
-info = CSVInfo(sample, "sample.csv"; skeys = parameterOrder) # use skeys to store the order.
+# info = CSVInfo(sample, "sample.csv"; skeys = parameterOrder) # use skeys to store the order.
+# OR:
+info = CSVInfo( parameterOrder, dynamicParameterRanges, "sample.csv")
+iterFromLast(f, dynamicParameterRanges, info) # function f takes up a parameter Dict and returns your data
 
 ```
 
