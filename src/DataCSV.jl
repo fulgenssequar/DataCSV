@@ -27,6 +27,16 @@ function CSVInfo(sample::Union{Dict, NamedTuple}, fileName::String; skeys = coll
     )
 end
 
+function CSVInfo(iKeys::AbstractArray{Symbol}, iRanges::SymbolRange, fileName::String)::CSVInfo
+    innerType(x::AbstractArray{T}) where T = T
+    tRanges = rangesFirst(iKeys, iRanges)
+    keyTypes = Dict{Symbol, Type}(k => innerType(v) for (k, v) in tRanges)
+    CSVInfo(
+        iKeys,
+        merge(keyTypes, Dict(:Data => String)),
+        fileName)
+end
+
 function dict2Row(d::Union{Dict, NamedTuple}, data::Any, info::CSVInfo)
     df=DataFrame()
     for k in info.keys
@@ -219,7 +229,7 @@ function getRapidChecker(info::CSVInfo)::Function
     f
 end
 
-function iterForward(f::Function, iterKeys::AbstractArray, iterRanges::SymbolRange , info::CSVInfo; keyForData = (p, d) -> p)
+function iterForward(f::Function, iterRanges::SymbolRange, info::CSVInfo; keyForData = (p, d) -> p, iterKeys::AbstractArray = info.keys )
     # Do new iteration or resume the interrupted csv file.
     function runAndSave(paras)
         data = f( paras )
@@ -299,7 +309,7 @@ function getNextKey(iKeys::AbstractArray, iRanges::SymbolRange, tRanges::SymbolR
     end
 end
 
-function iterFromLast(f::Function, iKeys::AbstractArray, iRanges::SymbolRange, info::CSVInfo; init = iRanges, keyForData = (p, d) -> p)
+function iterFromLast(f::Function,  iRanges::SymbolRange, info::CSVInfo; init = iRanges, keyForData = (p, d) -> p, iKeys::AbstractArray = info.keys,)
     # If iteration has history, resume from the csv file in storage; otherwise do normal iteration.
     init =
         if (isfile( info.fileName ))

@@ -54,17 +54,20 @@ mx23 = findRows( r -> r.x % 3 == 1 && r.y % 4 == 2, rows; iter = true, nokeys = 
 # mx23 can be folded, reduced, aggregated, accumulated, etc.
 
 ```
-## Intelligent iteration using exported function: iterForward
+## Intelligent iteration using exported function: iterForward & iterFromLast
 
 In case of computer shutdown, it is possible that the csv file contains only partial lines of the whole desired data.
 
-If the iterative computation restores from the beginning, the old csv file **is appended** with new data and consequently contains **reduplicated** data.
+If the computation restores from the beginning, the old csv file **is appended** with new data and consequently contains **reduplicated** items.
 
 However, checking if a certain key is contained by the old file before computation would be time consuming, while totally discarding the old data seems uneconomical.
 
 So you would want to use the function:
 ``` julia
-function iterForward(f::Function, iterKeys::AbstractArray, iterRanges::Dict, info::CSVInfo; keyForData = (p, d) -> p)::Unit
+# Slower:
+function iterForward(f::Function, iterRanges::Dict, info::CSVInfo; keyForData = (p, d) -> p, iterKeys::AbstractArray = info.keys)::Unit
+# OR: Faster 
+function iterFromLast(f::Function, iterRanges::Dict, info::CSVInfo; keyForData = (p, d) -> p, iterKeys::AbstractArray = info.keys)::Unit
 ```
 which rapidly find the position where the last iteration was interrupted and resume the computation, in addition of doing the normal iteration.
 
@@ -94,12 +97,12 @@ end
 # First iteration:
 
 iRanges1 = SymbolRange(:x => 1:10, :y => 1:10)
-iterForward(getData, iKeys, iRanges1, info)
+iterForward(getData, iRanges1, info)
 
 # shutdown and resume 
 
 iRanges2 = SymbolRange(:x => 1:23, :y => 1:10)
-iterForward(getData, iKeys, iRanges2, info)
+iterForward(getData, iRanges2, info)
 
 rows = collect(file2Rows(info))
 

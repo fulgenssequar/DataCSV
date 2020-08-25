@@ -21,6 +21,24 @@ println( " Raw range: $rgF")
 println( " Last data: $rgT" )
 println( " Next data; $nxtRg  \n which is $status\n" )
 
+info = CSVInfo([:w, :x, :y, :z], rgF, "onlykeys.csv")
+doprint(d) = begin
+    if d[:x] == d[:w] && d[:y] == d[:z]
+        println()
+    end
+    print(" Iter->")
+    for k in info.keys
+        print("$k=$(d[k]);")
+    end
+    "nothing"
+end
+iterFromLast(doprint, rgF, info)
+println()
+@info "The last iteration was normal"
+rm(info.fileName)
+
+
+
 @info "Manual check: Another Example:"
 
 sample = (repeat="time_1", x = BigInt(1), y = BigInt(2), time = BigInt(0))
@@ -83,7 +101,7 @@ end
 
 @info "First computation precession:"
 
-iterForward(getData, iKeys, iRanges1, info)
+iterForward(getData, iRanges1, info)
 
 # get last iteration method 1 ( slow ):
 checker = DataCSV.getRapidChecker(info)
@@ -110,10 +128,10 @@ checker = DataCSV.getRapidChecker(info)
 
 
 
-iterForward(getData, iKeys, iRanges2, info)
+iterForward(getData, iRanges2, info)
 
 println()
-iterFromLast( getData, iKeys, iRanges3, info )
+iterFromLast( getData, iRanges3, info )
 
 println()
 @info "Checking total lines:"
