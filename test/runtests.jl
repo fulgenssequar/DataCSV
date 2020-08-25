@@ -1,90 +1,5 @@
 using DataCSV, Test
 
-sample = ( x = 5, y = 3, z = 1.5 )
-info = CSVInfo( sample, "xy.csv" ; skeys = [:x, :y, :z])
-
-if (isfile(info.fileName))
-    rm(info.fileName)
-end
-
-
-# for  x in 1:10
-#     for y in 1:10
-#         matrix = rand( x % 3 + 1, y % 4 + 1 )
-#         avg = sqrt( 0.5 * ( x ^ 2 + y ^ 2))
-#         dict2File( ( x = x, y = y ), Dict( :matrix  => matrix, :avg => avg ), info )
-#         print( " x = $x, y = $y stored         \r" )
-#     end
-# end
-
-# println()
-
-# @info " iterate selected rows from a csv file"
-# @test isfile("xy.csv")
-
-# rows = file2Rows( info )
-
-# # all matrices of size 3 x 4
-
-# mx34 = findRows( r -> r.x % 3 == 2 && r.y % 4 == 3, rows; iter = true )
-
-# sum34 = foldl( ( x, y) -> (x .+ y[ :matrix ]), mx34 ; init = 0)
-# display( sum34 )
-# println()
-
-# @info "get all keys"
-
-# oks = file2Keys( info; lazyList = true)
-
-# for x in 1:20
-#     for y in 1:10
-#         key = (x = x, y = y)
-#         if (keyExists( key, oks))
-#             println("skipping $key   \r")
-#             continue
-#         end
-#         matrix = rand( x % 3 + 1, y % 4 + 1 )
-#         avg = sqrt( 0.5 * ( x ^ 2 + y ^ 2))
-#         data = Dict(:matrix => matrix, :avg => avg)
-#         dict2File( key, data, info )
-#         println("Key $key computed and stored \r")
-#     end
-# end
-
-# rows2 = file2Rows(info)
-# sampleRow =   findRows( sample, rows2 )  
-
-# @test length(sampleRow) == 1
-
-# @info "Testing the very delicate headFirst function ..."
-# function orderless(a1) 
-#     if (isempty(a1)) false
-#     else
-#         x, y = a1[1]
-#         if x < y true
-#         elseif x == y
-#             orderless(a1[2:end])
-#         else
-#             false
-#         end
-#     end
-# end
-
-
-# function f(t) 
-#     ab = [(t[m], 6) for m in [:w, :x, :y, :z]]
-#     orderless(ab)
-# end
-
-
-# pointers = [:w, :x, :y, :z]
-# ranges = Dict(:w=>0:7,:x=>2:8, :y=>0:13, :z=>7:9)
-
-# out = headFirst(pointers, ranges, f)
-# println(out)
-
-# @test  out[:w][1] == out[:x][1] == out[:y][1] == 6 && out[:z][1] == 7
-
 SymbolRange = Dict{Symbol, Union{Function, <: AbstractArray}}
 @info "Manual check: Whether next is true"
 rgF = SymbolRange(
@@ -102,11 +17,38 @@ rgT = SymbolRange(
 )
 
 nxtRg , status = DataCSV.getNextKey([:w, :x, :y, :z], rgF, rgT)
+println( " Raw range: $rgF")
 println( " Last data: $rgT" )
-println( " Next data; $nxtRg  \n which is $status" )
+println( " Next data; $nxtRg  \n which is $status\n" )
+
+@info "Manual check: Another Example:"
+
+sample = (repeat="time_1", x = BigInt(1), y = BigInt(2), time = BigInt(0))
+info = CSVInfo(sample, "reminders.csv"; skeys = [:x, :y, :repeat, :time])
+iKeys = [:repeat, :x, :y]
+iRanges = SymbolRange(:repeat => map(i -> "repeat_$i", 1:5), :x => 1:10000, :y => d -> d[:x] : 10000)
+
+rgLast = SymbolRange(
+  :y      => 3968:10000,
+  :repeat => ["repeat_1", "repeat_2", "repeat_3", "repeat_4", "repeat_5"],
+  :x      => 985:10000
+)
+rgInit, status = DataCSV.getNextKey( iKeys, iRanges, rgLast )
+
+println( "rgOrig = $iRanges")
+println( "rgLast = $rgLast")
+println( "rgInit = $rgInit")
 
 
 @info "Check Advanced Iteration Method:"
+
+sample = ( x = 5, y = 3, z = 1.5 )
+info = CSVInfo( sample, "xy.csv" ; skeys = [:x, :y, :z])
+
+if (isfile(info.fileName))
+    rm(info.fileName)
+end
+
 
 iKeys = [:x, :y, :z]
 
@@ -150,7 +92,7 @@ init = DataCSV.headFirst(iKeys, iRanges2, checker)
 # get last iteration method 2 ( directly ):
 rLast = DataCSV.readLastLine( info )
 iterLast = DataCSV.getLastKey( iKeys, iRanges2, rLast )
-iterInit = DataCSV.getNextKey( iKeys, iRanges2, iterLast )
+iterInit, status = DataCSV.getNextKey( iKeys, iRanges2, iterLast )
 
 println()
 println("Last run interrupted  before: $init\n")

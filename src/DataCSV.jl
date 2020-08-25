@@ -275,18 +275,19 @@ function getLastKey(iKeys, iRanges, oldOut; n = 1, init = Dict())::SymbolRange
     end
 end
 
-function getNextKey(iKeys::AbstractArray, iRanges::SymbolRange, tRanges::SymbolRange; n = 1, status = false) 
-    if ( status )
-        return (iRanges, true)
-    elseif n > length( iKeys )
+function getNextKey(iKeys::AbstractArray, iRanges::SymbolRange, tRanges::SymbolRange; n = 1)::Tuple{SymbolRange, Bool} 
+    #if ( status )
+    #    return (iRanges, true)
+    #elseif n > length( iKeys )
+    if n > length( iKeys )
         return (iRanges, false)
     else
         k = iKeys[ n ] 
         rg = tRanges[ k ]
         iRanges1 = merge( iRanges, SymbolRange( k => rg ) )
-        res, st1= getNextKey( iKeys, iRanges1, tRanges; n = n + 1, status = false )
+        res, st1= getNextKey( iKeys, iRanges1, tRanges; n = n + 1 )
         if ( st1 )
-            return res
+            return (res, true)
         else
             if length( rg ) > 1
                 iRanges[ k ] = rg[ 2 : end ]
@@ -305,7 +306,8 @@ function iterFromLast(f::Function, iKeys::AbstractArray, iRanges::SymbolRange, i
             rLast = readLastLine( info )
             println( "Found ancient iteration: $rLast" )
             kLast = getLastKey( iKeys, iRanges, rLast )
-            getNextKey( iKeys, iRanges, kLast )
+            nextIter, st = getNextKey( iKeys, iRanges, kLast )
+            nextIter
         else
             init
         end

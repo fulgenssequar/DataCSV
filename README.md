@@ -6,10 +6,10 @@
 Gigantic amount of data items can be stored and extracted using Dictionary-like CSV files without exerting the memory.
 
 ### Features:
-- New data is appended to the csv file in disk without risk of lost in case of shutdown.
+- New data is appended to the csv file in disk without risk of losing in case of shutdown.
 - A column named "Data" is preserved to restore the data which is converted into String.
-- All other columns are keys for query.
-- A Dict data can be directly converted into a csv item.
+- All other columns are indices for query.
+- New data and indices of type Dict can be directly converted into a csv item.
 
 ##  Usage
 
@@ -86,19 +86,19 @@ function getData(paras)
     y = paras[ :y ]
     matrix = rand( x % 3 + 1, y % 4 + 1 )
     avg = sqrt( 0.5 * ( x ^ 2 + y ^ 2))
-    data = Dict(:matrix => matrix, :avg => avg)
+    data = SymbolRange(:matrix => matrix, :avg => avg) # SymbolRange isa Dict
     println("Smart Iteration at: x = $x, y = $y")
     data
 end
 
 # First iteration:
 
-iRanges1 = Dict(:x => 1:10, :y => 1:10)
+iRanges1 = SymbolRange(:x => 1:10, :y => 1:10)
 iterForward(getData, iKeys, iRanges1, info)
 
 # shutdown and resume 
 
-iRanges2 = Dict(:x => 1:23, :y => 1:10)
+iRanges2 = SymbolRange(:x => 1:23, :y => 1:10)
 iterForward(getData, iKeys, iRanges2, info)
 
 rows = collect(file2Rows(info))
@@ -108,6 +108,27 @@ if (test length(rows) == 230)
 end
 
 ```
+
+## Iteration With Non-Uniform Ranges:
+
+**SymbolRange** supports ::Function{SymbolRange, SymbolRange} rather than ::AbstractArray as range values.
+
+*The order of the range dependence cannot be messed up!*
+
+```julia
+parameterOrder = [:w, :x, :y, :z] # the order of CSVInfo.keys is vital
+dynamicParameterRanges = SymbolRange(
+    :w => 1:10, # The range of the first parameter cannot be a function
+    :x => d -> d[ :w ] : 10, # The range of x depends on w
+    :y => d -> 1 : (d[ :x ] - d[ :w ] + 1), # The range of y depends on x and w
+    :z => d -> d[ :y ] : d[ :y ] + 2 # The range of z depends on y
+)
+sample = (w = 1, x = 1, y = 1, z = 1)
+info = CSVInfo(sample, "sample.csv"; skeys = parameterOrder) # use skeys to store the order.
+
+```
+
+
 ## See Also:
 ```
 /test/runtest.jl
