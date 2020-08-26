@@ -126,8 +126,6 @@ checker = DataCSV.getRapidChecker(info)
 @test checker((x=5, y=10, z=0.0))
 @test ! checker((x=5, y=11, z=3.0))
 
-
-
 iterForward(getData, iRanges2, info)
 
 println()
@@ -144,8 +142,8 @@ println()
 
 # all matrices of size 2 x 3
 
-mx23 = findRows( r -> r.x % 3 == 1 && r.y % 4 == 2, rows; iter = true, dmapper = d -> d[:matrix] )
-
+mx23 = findRows( r -> r.x % 3 == 1 && r.y % 4 == 2, info; iter = true, nokeys = true, dmapper = d -> d[:matrix] )
+println(collect(Iterators.take(mx23, 5)))
 sum23 = foldl( (x, y) -> x .+ y, mx23 )
 
 display( sum23 )

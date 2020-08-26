@@ -38,11 +38,11 @@ function CSVInfo(iKeys::AbstractArray{Symbol}, iRanges::SymbolRange, fileName::S
 end
 
 function dict2Row(d::Union{Dict, NamedTuple}, data::Any, info::CSVInfo)
-    df=DataFrame()
+    df=DataFrame( )
     for k in info.keys
-        df[!, k] = [d[k]]
+        df[ !, k ] = [ d[ k ] ]
     end
-    df[!, :Data]=[data]
+    df[ !, :Data ]=[ data ]
     df
 end
 
@@ -73,10 +73,9 @@ function file2Keys(info::CSVInfo; lazyList = false, select = collect( info.keys)
     end
 end
 
-
 function goodRow(key::Union{Dict, NamedTuple}, row)
         for k in keys(key)
-            if (key[k]  !=  row[k])
+            if ( key[ k ]  !=  row[ k ] )
                 return false
             end
         end
@@ -88,19 +87,24 @@ function useRow(r; nokeys = true, dmapper= identity)
     try
         data = eval(Meta.parse(r[:Data]))
     catch
-        println("data is plain String! ->  $data")
+        # println("data is plain String! ->  $data")
     end
     if (nokeys)
         return dmapper( data )
     else
         keyDict = Dict([k => r[k] for k in keys(r) if k != :Data])
-        merge(keyDict, Dict(:Data => data))
+        dmapper( merge( keyDict, Dict( :Data => data ) ) )
     end
 end
 
 function findRows( key::Union{Dict, NamedTuple}, rows; iter = false, nokeys = true, dmapper = identity )
     f( r ) = goodRow( key, r )
     findRows( f, rows; iter = iter, nokeys = nokeys, dmapper = dmapper )
+end
+
+function findRows(f::Function, info::CSVInfo; iter = false, nokeys = true, dmapper = identity)
+    rows = file2Rows( info )
+    findRows( f, rows; iter = iter, nokeys = nokeys, dmapper = dmapper)
 end
 
 function findRows(f::Function, rows; iter = false, nokeys = true, dmapper = identity )
@@ -336,7 +340,7 @@ function iterFromLast(f::Function,  iRanges::SymbolRange, info::CSVInfo; init = 
         data = f( paras )
         dict2File(keyForData(paras, data), data, info)
     end
-    iterFromInit(runAndSave, iterKeys, iRanges; init = init)
+    iterFromInit( runAndSave, iterKeys, iRanges; init = init )
 end
 
 
